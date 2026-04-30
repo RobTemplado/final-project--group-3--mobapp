@@ -66,6 +66,7 @@ export default function DashboardScreen() {
   const [range, setRange] = useState<DateRangeKey>("30d");
   const [categoryFilterId, setCategoryFilterId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [expandedChart, setExpandedChart] = useState<string | null>(null);
 
   const symbol = getCurrencySymbol(currencySettings.homeCurrency);
 
@@ -255,9 +256,10 @@ export default function DashboardScreen() {
         ListEmptyComponent={
           <Text style={styles.empty}>No expenses for this filter.</Text>
         }
-        contentContainerStyle={
-          filtered.length ? undefined : styles.emptyContainer
-        }
+        contentContainerStyle={[
+          styles.contentContainer,
+          !filtered.length && styles.emptyContainer,
+        ]}
         style={styles.list}
         ListHeaderComponent={
           <View>
@@ -272,7 +274,7 @@ export default function DashboardScreen() {
                 </View>
                 <View style={styles.headerBadge}>
                   <Text style={styles.headerBadgeText}>
-                    {filtered.length} txns
+                    {filtered.length} Transactions
                   </Text>
                 </View>
               </View>
@@ -329,166 +331,307 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            {/* Filters */}
-            <View style={styles.filterCard}>
-              <Text style={styles.sectionTitle}>Filters</Text>
-              <TextInput
-                placeholder="Search by merchant, notes, or tags"
-                placeholderTextColor={colors.textMuted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                style={styles.searchInput}
-              />
-              <View style={styles.filterRow}>
-                {rangeOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option.key}
-                    style={[
-                      styles.filterPill,
-                      range === option.key && styles.filterPillActive,
-                    ]}
-                    onPress={() => setRange(option.key)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterText,
-                        range === option.key && styles.filterTextActive,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <View style={styles.filterRow}>
+            {/* Search and Filters */}
+            <TextInput
+              placeholder="Search by merchant, notes, or tags"
+              placeholderTextColor={colors.textMuted}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              style={styles.searchInput}
+            />
+            
+            {/* Date Range Filters */}
+            <View style={styles.filterRow}>
+              {rangeOptions.map((option) => (
                 <TouchableOpacity
+                  key={option.key}
                   style={[
                     styles.filterPill,
-                    !categoryFilterId && styles.filterPillActive,
+                    range === option.key && styles.filterPillActive,
                   ]}
-                  onPress={() => setCategoryFilterId(null)}
+                  onPress={() => setRange(option.key)}
                 >
                   <Text
                     style={[
                       styles.filterText,
-                      !categoryFilterId && styles.filterTextActive,
+                      range === option.key && styles.filterTextActive,
                     ]}
                   >
-                    All
+                    {option.label}
                   </Text>
                 </TouchableOpacity>
-                {categories.map((category) => (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[
-                      styles.filterPill,
-                      categoryFilterId === category.id &&
-                        styles.filterPillActive,
-                    ]}
-                    onPress={() => setCategoryFilterId(category.id)}
-                  >
-                    <Text
-                      style={[
-                        styles.filterText,
-                        categoryFilterId === category.id &&
-                          styles.filterTextActive,
-                      ]}
-                    >
-                      {category.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              ))}
             </View>
-
-            {/* Charts */}
-            <View style={styles.chartCard}>
-              <Text style={styles.sectionTitle}>Spend by category</Text>
-              {hasCategoryTotals ? (
-                <BarChart
-                  data={totalsByCategory}
-                  barWidth={26}
-                  spacing={22}
-                  height={190}
-                  yAxisColor={colors.border}
-                  xAxisColor={colors.border}
-                  noOfSections={4}
-                  yAxisTextStyle={styles.axisText}
-                  xAxisLabelTextStyle={styles.axisText}
-                  barBorderRadius={10}
-                />
-              ) : (
-                <Text style={styles.empty}>No category totals yet.</Text>
-              )}
-            </View>
-
-            <View style={styles.chartCard}>
-              <Text style={styles.sectionTitle}>Category split</Text>
-              {pieData.length ? (
-                <PieChart
-                  data={pieData}
-                  donut
-                  radius={80}
-                  innerRadius={50}
-                  centerLabelComponent={() => (
-                    <Text style={styles.pieCenter}>
-                      {symbol}
-                      {totalSpend.toFixed(0)}
-                    </Text>
-                  )}
-                />
-              ) : (
-                <Text style={styles.empty}>No chart data yet.</Text>
-              )}
-            </View>
-
-            <View style={styles.chartCard}>
-              <Text style={styles.sectionTitle}>Daily spend</Text>
-              {hasLineTotals ? (
-                <LineChart
-                  data={lineData}
-                  color={colors.accent}
-                  thickness={3}
-                  hideRules
-                  dataPointsColor={colors.accent}
-                  yAxisColor={colors.border}
-                  xAxisColor={colors.border}
-                  xAxisLabelTextStyle={styles.axisText}
-                  yAxisTextStyle={styles.axisText}
-                  isAnimated
-                />
-              ) : (
-                <Text style={styles.empty}>No daily spend yet.</Text>
-              )}
-            </View>
-
-            <View style={styles.chartCard}>
-              <Text style={styles.sectionTitle}>Month comparison</Text>
-              {hasComparisonTotals ? (
-                <BarChart
-                  data={[
-                    {
-                      label: "Prev",
-                      value: comparison.previousTotal,
-                      frontColor: colors.surfaceMuted,
-                    },
-                    {
-                      label: "This",
-                      value: comparison.currentTotal,
-                      frontColor: colors.accent,
-                    },
+            
+            {/* Category Filters */}
+            <View style={styles.filterRow}>
+              <TouchableOpacity
+                style={[
+                  styles.filterPill,
+                  !categoryFilterId && styles.filterPillActive,
+                ]}
+                onPress={() => setCategoryFilterId(null)}
+              >
+                <Text
+                  style={[
+                    styles.filterText,
+                    !categoryFilterId && styles.filterTextActive,
                   ]}
-                  barWidth={40}
-                  spacing={28}
-                  height={180}
-                  yAxisColor={colors.border}
-                  xAxisColor={colors.border}
-                  yAxisTextStyle={styles.axisText}
-                  xAxisLabelTextStyle={styles.axisText}
-                  barBorderRadius={10}
-                />
+                >
+                  All
+                </Text>
+              </TouchableOpacity>
+              {categories.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[
+                    styles.filterPill,
+                    categoryFilterId === category.id &&
+                      styles.filterPillActive,
+                  ]}
+                  onPress={() => setCategoryFilterId(category.id)}
+                >
+                  <Text
+                    style={[
+                      styles.filterText,
+                      categoryFilterId === category.id &&
+                        styles.filterTextActive,
+                    ]}
+                  >
+                    {category.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Charts Container */}
+            <View style={styles.chartsContainer}>
+              <Text style={[styles.sectionTitle, styles.chartsTitle]}>Analytics</Text>
+              
+              {expandedChart === null ? (
+                <View>
+                  {/* Grid of charts */}
+                  <View style={styles.chartsGrid}>
+                    {/* Spend by category */}
+                    <TouchableOpacity
+                      style={styles.chartThumbnail}
+                      onPress={() => setExpandedChart("category")}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.chartThumbnailTitle}>Spend by category</Text>
+                      {hasCategoryTotals ? (
+                        <BarChart
+                          data={totalsByCategory}
+                          barWidth={12}
+                          spacing={8}
+                          height={100}
+                          yAxisColor={colors.border}
+                          xAxisColor={colors.border}
+                          noOfSections={3}
+                          yAxisTextStyle={[styles.axisText, { fontSize: 8 }]}
+                          xAxisLabelTextStyle={[styles.axisText, { fontSize: 8 }]}
+                          barBorderRadius={5}
+                        />
+                      ) : (
+                        <Text style={styles.empty}>No data</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    {/* Category split */}
+                    <TouchableOpacity
+                      style={styles.chartThumbnail}
+                      onPress={() => setExpandedChart("pie")}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.chartThumbnailTitle}>Category split</Text>
+                      {pieData.length ? (
+                        <PieChart
+                          data={pieData}
+                          donut
+                          radius={45}
+                          innerRadius={25}
+                          centerLabelComponent={() => (
+                            <Text style={[styles.pieCenter, { fontSize: 10 }]}>
+                              {symbol}
+                              {totalSpend.toFixed(0)}
+                            </Text>
+                          )}
+                        />
+                      ) : (
+                        <Text style={styles.empty}>No data</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    {/* Daily spend */}
+                    <TouchableOpacity
+                      style={styles.chartThumbnail}
+                      onPress={() => setExpandedChart("line")}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.chartThumbnailTitle}>Daily spend</Text>
+                      {hasLineTotals ? (
+                        <LineChart
+                          data={lineData}
+                          color={colors.accent}
+                          thickness={2}
+                          hideRules
+                          dataPointsColor={colors.accent}
+                          yAxisColor={colors.border}
+                          xAxisColor={colors.border}
+                          xAxisLabelTextStyle={[styles.axisText, { fontSize: 8 }]}
+                          yAxisTextStyle={[styles.axisText, { fontSize: 8 }]}
+                          isAnimated
+                          height={100}
+                        />
+                      ) : (
+                        <Text style={styles.empty}>No data</Text>
+                      )}
+                    </TouchableOpacity>
+
+                    {/* Month comparison */}
+                    <TouchableOpacity
+                      style={styles.chartThumbnail}
+                      onPress={() => setExpandedChart("comparison")}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.chartThumbnailTitle}>Month comparison</Text>
+                      {hasComparisonTotals ? (
+                        <BarChart
+                          data={[
+                            {
+                              label: "Prev",
+                              value: comparison.previousTotal,
+                              frontColor: colors.surfaceMuted,
+                            },
+                            {
+                              label: "This",
+                              value: comparison.currentTotal,
+                              frontColor: colors.accent,
+                            },
+                          ]}
+                          barWidth={16}
+                          spacing={16}
+                          height={100}
+                          yAxisColor={colors.border}
+                          xAxisColor={colors.border}
+                          yAxisTextStyle={[styles.axisText, { fontSize: 8 }]}
+                          xAxisLabelTextStyle={[styles.axisText, { fontSize: 8 }]}
+                          barBorderRadius={5}
+                        />
+                      ) : (
+                        <Text style={styles.empty}>No data</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
               ) : (
-                <Text style={styles.empty}>No comparison data yet.</Text>
+                <View style={styles.chartExpandedContainer}>
+                  <TouchableOpacity
+                    onPress={() => setExpandedChart(null)}
+                    style={styles.closeChartsButton}
+                  >
+                    <Text style={styles.closeChartsText}>← Back to charts</Text>
+                  </TouchableOpacity>
+
+                  {expandedChart === "category" && (
+                    <View>
+                      <Text style={styles.chartExpandedTitle}>Spend by category</Text>
+                      {hasCategoryTotals ? (
+                        <BarChart
+                          data={totalsByCategory}
+                          barWidth={26}
+                          spacing={22}
+                          height={190}
+                          yAxisColor={colors.border}
+                          xAxisColor={colors.border}
+                          noOfSections={4}
+                          yAxisTextStyle={styles.axisText}
+                          xAxisLabelTextStyle={styles.axisText}
+                          barBorderRadius={10}
+                        />
+                      ) : (
+                        <Text style={styles.empty}>No category totals yet.</Text>
+                      )}
+                    </View>
+                  )}
+
+                  {expandedChart === "pie" && (
+                    <View>
+                      <Text style={styles.chartExpandedTitle}>Category split</Text>
+                      {pieData.length ? (
+                        <PieChart
+                          data={pieData}
+                          donut
+                          radius={80}
+                          innerRadius={50}
+                          centerLabelComponent={() => (
+                            <Text style={styles.pieCenter}>
+                              {symbol}
+                              {totalSpend.toFixed(0)}
+                            </Text>
+                          )}
+                        />
+                      ) : (
+                        <Text style={styles.empty}>No chart data yet.</Text>
+                      )}
+                    </View>
+                  )}
+
+                  {expandedChart === "line" && (
+                    <View>
+                      <Text style={styles.chartExpandedTitle}>Daily spend</Text>
+                      {hasLineTotals ? (
+                        <LineChart
+                          data={lineData}
+                          color={colors.accent}
+                          thickness={3}
+                          hideRules
+                          dataPointsColor={colors.accent}
+                          yAxisColor={colors.border}
+                          xAxisColor={colors.border}
+                          xAxisLabelTextStyle={styles.axisText}
+                          yAxisTextStyle={styles.axisText}
+                          isAnimated
+                          height={240}
+                        />
+                      ) : (
+                        <Text style={styles.empty}>No daily spend yet.</Text>
+                      )}
+                    </View>
+                  )}
+
+                  {expandedChart === "comparison" && (
+                    <View>
+                      <Text style={styles.chartExpandedTitle}>Month comparison</Text>
+                      {hasComparisonTotals ? (
+                        <BarChart
+                          data={[
+                            {
+                              label: "Prev",
+                              value: comparison.previousTotal,
+                              frontColor: colors.surfaceMuted,
+                            },
+                            {
+                              label: "This",
+                              value: comparison.currentTotal,
+                              frontColor: colors.accent,
+                            },
+                          ]}
+                          barWidth={40}
+                          spacing={28}
+                          height={180}
+                          yAxisColor={colors.border}
+                          xAxisColor={colors.border}
+                          yAxisTextStyle={styles.axisText}
+                          xAxisLabelTextStyle={styles.axisText}
+                          barBorderRadius={10}
+                        />
+                      ) : (
+                        <Text style={styles.empty}>No comparison data yet.</Text>
+                      )}
+                    </View>
+                  )}
+                </View>
               )}
             </View>
 
