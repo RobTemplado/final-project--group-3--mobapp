@@ -9,17 +9,14 @@ import AddExpenseScreen from "../screens/AddExpenseScreen";
 import AdminPanelScreen from "../screens/AdminPanelScreen";
 import MyProfileScreen from "../screens/MyProfileScreen";
 import { useAppContext } from "../context/AppContext";
-import { colors, radii } from "../utils/theme";
+import { colors, fonts, radii } from "../utils/theme";
 
 const Stack = createNativeStackNavigator();
 const Tabs = createBottomTabNavigator();
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>["name"];
 
-const TAB_ICONS: Record<
-  string,
-  { focused: IoniconsName; default: IoniconsName }
-> = {
+const TAB_ICONS: Record<string, { focused: IoniconsName; default: IoniconsName }> = {
   Dashboard: { focused: "grid", default: "grid-outline" },
   "Add Expense": { focused: "add-circle", default: "add-circle-outline" },
   Admin: { focused: "shield", default: "shield-outline" },
@@ -28,12 +25,8 @@ const TAB_ICONS: Record<
 
 function AuthStack() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="Login"
-        component={LoginScreen}
-        options={{ headerShown: false }}
-      />
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: "fade" }}>
+      <Stack.Screen name="Login" component={LoginScreen} />
     </Stack.Navigator>
   );
 }
@@ -49,45 +42,52 @@ function AppTabs() {
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
           position: "absolute",
-          bottom: 24,
-          left: 20,
-          right: 20,
-          elevation: 8,
+          bottom: 20,
+          left: 16,
+          right: 16,
+          elevation: 10,
           shadowColor: "#000",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 10,
+          shadowOffset: { width: 0, height: 6 },
+          shadowOpacity: 0.12,
+          shadowRadius: 16,
           backgroundColor: colors.surface,
           borderRadius: radii.xl,
-          height: 64,
+          height: 68,
           borderTopWidth: 0,
-          paddingBottom: 8,
-          paddingTop: 8,
+          paddingBottom: 10,
+          paddingTop: 10,
         },
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: "600",
-          marginBottom: 4,
+          fontFamily: fonts.body,
+          marginTop: 2,
         },
-        tabBarIcon: ({ focused, color }) => {
+        tabBarIcon: ({ focused, color, size }) => {
           const icons = TAB_ICONS[route.name];
           const iconName = icons
-            ? focused
-              ? icons.focused
-              : icons.default
+            ? focused ? icons.focused : icons.default
             : "ellipse-outline";
-          return <Ionicons name={iconName} size={24} color={color} />;
+          return <Ionicons name={iconName} size={22} color={color} />;
         },
       })}
     >
       <Tabs.Screen name="Dashboard" component={DashboardScreen} />
-      <Tabs.Screen name="Add Expense" component={AddExpenseScreen} />
+      <Tabs.Screen
+        name="Add Expense"
+        component={AddExpenseScreen}
+        options={{
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              name="add-circle"
+              size={32}
+              color={focused ? colors.accent : colors.primary}
+            />
+          ),
+        }}
+      />
       {currentUser?.role === "Admin" ? (
-        <Tabs.Screen
-          name="Admin"
-          component={AdminPanelScreen}
-          options={{ headerRight: () => null }}
-        />
+        <Tabs.Screen name="Admin" component={AdminPanelScreen} />
       ) : null}
       <Tabs.Screen name="My Profile" component={MyProfileScreen} />
     </Tabs.Navigator>
@@ -97,9 +97,7 @@ function AppTabs() {
 export default function RootNavigator() {
   const { currentUser, isLoading } = useAppContext();
 
-  if (isLoading) {
-    return null;
-  }
+  if (isLoading) return null;
 
   return (
     <NavigationContainer>

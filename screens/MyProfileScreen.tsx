@@ -8,19 +8,19 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import styles from "../styles/screens/MyProfileScreenStyles";
 import { colors } from "../utils/theme";
 import { useAppContext } from "../context/AppContext";
 import { ensureReminderPermissions } from "../utils/reminders";
 
-const supportedCurrencies = ["USD", "EUR", "GBP", "PHP", "JPY", "AUD"];
+const supportedCurrencies = ["PHP", "USD", "EUR", "GBP", "JPY", "AUD"];
 
 function normalizeTimeInput(value: string): string {
   const trimmed = value.trim();
   const match = trimmed.match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
   if (!match) return trimmed;
-  const hour = match[1].padStart(2, "0");
-  return `${hour}:${match[2]}`;
+  return `${match[1].padStart(2, "0")}:${match[2]}`;
 }
 
 function isValidTime(value: string): boolean {
@@ -28,14 +28,7 @@ function isValidTime(value: string): boolean {
 }
 
 function getCurrencySymbol(code: string): string {
-  const symbols: Record<string, string> = {
-    PHP: "₱",
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-    JPY: "¥",
-    AUD: "A$",
-  };
+  const symbols: Record<string, string> = { PHP: "₱", USD: "$", EUR: "€", GBP: "£", JPY: "¥", AUD: "A$" };
   return symbols[code] ?? code + " ";
 }
 
@@ -47,41 +40,30 @@ export default function MyProfileScreen() {
     updateReminderSettings,
     currencySettings,
     updateCurrencySettings,
+    logout,
   } = useAppContext();
+
   const [reminderTime, setReminderTime] = useState(reminderSettings.time);
   const [ratesDraft, setRatesDraft] = useState(currencySettings.rates ?? {});
 
-  const totalEntries = expenses.filter(
-    (e) => e.userId === currentUser?.id,
-  ).length;
+  const totalEntries = expenses.filter((e) => e.userId === currentUser?.id).length;
   const symbol = getCurrencySymbol(currencySettings.homeCurrency);
-
   const totalSpend = expenses
     .filter((e) => e.userId === currentUser?.id)
     .reduce((sum, e) => sum + (e.homeAmount ?? e.amount), 0);
 
-  useEffect(() => {
-    setReminderTime(reminderSettings.time);
-  }, [reminderSettings.time]);
-  useEffect(() => {
-    setRatesDraft(currencySettings.rates ?? {});
-  }, [currencySettings.rates]);
+  useEffect(() => { setReminderTime(reminderSettings.time); }, [reminderSettings.time]);
+  useEffect(() => { setRatesDraft(currencySettings.rates ?? {}); }, [currencySettings.rates]);
 
   const handleToggle = async () => {
     if (!reminderSettings.enabled) {
       const granted = await ensureReminderPermissions();
       if (!granted) {
-        Alert.alert(
-          "Permission required",
-          "Enable notifications to receive daily reminders.",
-        );
+        Alert.alert("Permission required", "Enable notifications to receive daily reminders.");
         return;
       }
     }
-    await updateReminderSettings({
-      ...reminderSettings,
-      enabled: !reminderSettings.enabled,
-    });
+    await updateReminderSettings({ ...reminderSettings, enabled: !reminderSettings.enabled });
   };
 
   const handleTimeBlur = async () => {
@@ -97,23 +79,13 @@ export default function MyProfileScreen() {
   const handleHomeCurrencyChange = async (code: string) => {
     const nextRates = { ...currencySettings.rates, [code]: 1 };
     setRatesDraft(nextRates);
-    await updateCurrencySettings({
-      ...currencySettings,
-      homeCurrency: code,
-      rates: nextRates,
-      updatedAt: new Date().toISOString(),
-    });
+    await updateCurrencySettings({ ...currencySettings, homeCurrency: code, rates: nextRates, updatedAt: new Date().toISOString() });
   };
 
   const handleRateChange = (code: string, value: string) => {
-    const normalized = value.replace(/,/g, "");
-    const numeric = Number(normalized);
+    const numeric = Number(value.replace(/,/g, ""));
     if (Number.isNaN(numeric)) {
-      setRatesDraft((prev) => {
-        const next = { ...prev };
-        delete next[code];
-        return next;
-      });
+      setRatesDraft((prev) => { const next = { ...prev }; delete next[code]; return next; });
       return;
     }
     setRatesDraft((prev) => ({ ...prev, [code]: numeric }));
@@ -123,36 +95,32 @@ export default function MyProfileScreen() {
     const rate = ratesDraft[code];
     if (!rate || rate <= 0) {
       Alert.alert("Invalid rate", "Enter a positive number.");
-      setRatesDraft((prev) => ({
-        ...prev,
-        [code]: currencySettings.rates[code],
-      }));
+      setRatesDraft((prev) => ({ ...prev, [code]: currencySettings.rates[code] }));
       return;
     }
-    await updateCurrencySettings({
-      ...currencySettings,
-      rates: { ...currencySettings.rates, [code]: rate },
-      updatedAt: new Date().toISOString(),
-    });
+    await updateCurrencySettings({ ...currencySettings, rates: { ...currencySettings.rates, [code]: rate }, updatedAt: new Date().toISOString() });
+  };
+
+  const handleLogout = () => {
+    Alert.alert("Log out", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      { text: "Log Out", style: "destructive", onPress: logout },
+    ]);
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Hero */}
+    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerEyebrow}>My profile</Text>
+        <Text style={styles.headerEyebrow}>MY PROFILE</Text>
         <Text style={styles.headerTitle}>{currentUser?.name ?? ""}</Text>
         <Text style={styles.headerSubtitle}>
-          {currentUser?.role ?? ""} · {totalEntries} expense
-          {totalEntries !== 1 ? "s" : ""} logged
+          {currentUser?.role ?? ""} account
         </Text>
         <View style={styles.headerStatsRow}>
           <View style={styles.headerStat}>
-            <Text style={styles.headerStatLabel}>Total spent</Text>
-            <Text style={styles.headerStatValue}>
-              {symbol}
-              {totalSpend.toFixed(2)}
-            </Text>
+            <Text style={styles.headerStatLabel}>Total Spent</Text>
+            <Text style={styles.headerStatValue}>{symbol}{totalSpend.toFixed(2)}</Text>
           </View>
           <View style={styles.headerStatDivider} />
           <View style={styles.headerStat}>
@@ -162,27 +130,17 @@ export default function MyProfileScreen() {
         </View>
       </View>
 
-      {/* Account details */}
+      {/* Account */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Account</Text>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Name</Text>
+          <Text style={styles.detailLabel}>Username</Text>
           <Text style={styles.detailValue}>{currentUser?.name ?? ""}</Text>
         </View>
-        <View style={styles.detailRow}>
+        <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
           <Text style={styles.detailLabel}>Role</Text>
-          <View
-            style={[
-              styles.roleBadge,
-              currentUser?.role === "Admin" && styles.roleBadgeAdmin,
-            ]}
-          >
-            <Text
-              style={[
-                styles.roleBadgeText,
-                currentUser?.role === "Admin" && styles.roleBadgeTextAdmin,
-              ]}
-            >
+          <View style={[styles.roleBadge, currentUser?.role === "Admin" && styles.roleBadgeAdmin]}>
+            <Text style={[styles.roleBadgeText, currentUser?.role === "Admin" && styles.roleBadgeTextAdmin]}>
               {currentUser?.role ?? ""}
             </Text>
           </View>
@@ -191,16 +149,14 @@ export default function MyProfileScreen() {
 
       {/* Reminder */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Daily reminder</Text>
+        <Text style={styles.cardTitle}>Daily Reminder</Text>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Enable reminder</Text>
           <Switch
             value={reminderSettings.enabled}
             onValueChange={handleToggle}
             trackColor={{ false: colors.border, true: colors.accentSoft }}
-            thumbColor={
-              reminderSettings.enabled ? colors.accent : colors.surfaceMuted
-            }
+            thumbColor={reminderSettings.enabled ? colors.accent : colors.surfaceMuted}
           />
         </View>
         <Text style={styles.fieldLabel}>Reminder time (24h)</Text>
@@ -225,54 +181,44 @@ export default function MyProfileScreen() {
           {supportedCurrencies.map((code) => (
             <TouchableOpacity
               key={code}
-              style={[
-                styles.pill,
-                currencySettings.homeCurrency === code && styles.pillActive,
-              ]}
+              style={[styles.pill, currencySettings.homeCurrency === code && styles.pillActive]}
               onPress={() => handleHomeCurrencyChange(code)}
             >
-              <Text
-                style={[
-                  styles.pillText,
-                  currencySettings.homeCurrency === code &&
-                    styles.pillTextActive,
-                ]}
-              >
+              <Text style={[styles.pillText, currencySettings.homeCurrency === code && styles.pillTextActive]}>
                 {code}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        <Text style={styles.fieldLabel}>
-          Exchange rates (1 unit → {currencySettings.homeCurrency})
-        </Text>
+        <Text style={styles.fieldLabel}>Exchange rates → {currencySettings.homeCurrency}</Text>
         {supportedCurrencies
           .filter((code) => code !== currencySettings.homeCurrency)
           .map((code) => (
             <View key={code} style={styles.rateRow}>
               <Text style={styles.rateLabel}>{code}</Text>
               <TextInput
-                value={
-                  ratesDraft[code] !== undefined ? String(ratesDraft[code]) : ""
-                }
-                onChangeText={(value) => handleRateChange(code, value)}
+                value={ratesDraft[code] !== undefined ? String(ratesDraft[code]) : ""}
+                onChangeText={(v) => handleRateChange(code, v)}
                 onBlur={() => handleRateBlur(code)}
                 placeholder="0.00"
                 placeholderTextColor={colors.textMuted}
                 keyboardType="decimal-pad"
                 style={styles.rateInput}
               />
-              <Text style={styles.rateUnit}>
-                {currencySettings.homeCurrency}
-              </Text>
+              <Text style={styles.rateUnit}>{currencySettings.homeCurrency}</Text>
             </View>
           ))}
         <Text style={styles.helperText}>
           Example: If home is PHP, enter 1 USD = 56.20 PHP.
         </Text>
       </View>
+
+      {/* Logout */}
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout} activeOpacity={0.8}>
+        <Ionicons name="log-out-outline" size={20} color={colors.danger} />
+        <Text style={styles.logoutButtonText}>Log Out</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
-
