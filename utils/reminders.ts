@@ -88,7 +88,10 @@ export async function scheduleDailyReminder(
         body: "Did you spend anything today? Don't forget to log it!",
         sound: "default",
       },
-      trigger: { date: triggerDate },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: triggerDate,
+      },
     });
 
   return { ...settings, notificationId };

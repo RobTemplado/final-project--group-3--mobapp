@@ -2,16 +2,16 @@ import React, { useEffect, useState } from "react";
 import {
   Alert,
   ScrollView,
-  StyleSheet,
   Switch,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import styles from "../styles/screens/MyProfileScreenStyles";
+import { colors } from "../utils/theme";
 import { useAppContext } from "../context/AppContext";
 import { ensureReminderPermissions } from "../utils/reminders";
-import { colors, fonts, radii, shadow } from "../utils/theme";
 
 const supportedCurrencies = ["USD", "EUR", "GBP", "PHP", "JPY", "AUD"];
 
@@ -276,180 +276,3 @@ export default function MyProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, paddingBottom: 40 },
-  header: {
-    backgroundColor: colors.primary,
-    borderRadius: radii.xl,
-    padding: 22,
-    marginBottom: 14,
-    ...shadow.lift,
-  },
-  headerEyebrow: {
-    color: "rgba(255,255,255,0.5)",
-    fontSize: 10,
-    letterSpacing: 1.4,
-    textTransform: "uppercase",
-    fontFamily: fonts.body,
-  },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 22,
-    fontFamily: fonts.heading,
-    fontWeight: "700",
-    marginTop: 4,
-  },
-  headerSubtitle: {
-    color: "rgba(255,255,255,0.5)",
-    fontFamily: fonts.body,
-    marginTop: 4,
-    fontSize: 13,
-  },
-  headerStatsRow: {
-    flexDirection: "row",
-    marginTop: 16,
-    backgroundColor: "rgba(255,255,255,0.07)",
-    borderRadius: radii.md,
-    padding: 12,
-  },
-  headerStat: { flex: 1, alignItems: "center" },
-  headerStatLabel: {
-    color: "rgba(255,255,255,0.5)",
-    fontFamily: fonts.body,
-    fontSize: 11,
-  },
-  headerStatValue: {
-    color: "#fff",
-    fontFamily: fonts.heading,
-    fontWeight: "700",
-    fontSize: 18,
-    marginTop: 3,
-  },
-  headerStatDivider: { width: 0.5, backgroundColor: "rgba(255,255,255,0.15)" },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: 16,
-    borderWidth: 0.5,
-    borderColor: colors.border,
-    marginBottom: 14,
-    ...shadow.soft,
-  },
-  cardTitle: {
-    fontSize: 15,
-    fontFamily: fonts.heading,
-    fontWeight: "700",
-    marginBottom: 12,
-    color: colors.text,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 8,
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.border,
-  },
-  detailLabel: {
-    color: colors.textMuted,
-    fontFamily: fonts.body,
-    fontSize: 13,
-  },
-  detailValue: {
-    color: colors.text,
-    fontFamily: fonts.body,
-    fontWeight: "600",
-    fontSize: 13,
-  },
-  roleBadge: {
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radii.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderWidth: 0.5,
-    borderColor: colors.border,
-  },
-  roleBadgeAdmin: {
-    backgroundColor: colors.accentSoft,
-    borderColor: "#9FE1CB",
-  },
-  roleBadgeText: {
-    color: colors.textMuted,
-    fontFamily: fonts.body,
-    fontWeight: "600",
-    fontSize: 12,
-  },
-  roleBadgeTextAdmin: { color: "#085041" },
-  fieldLabel: {
-    color: colors.textMuted,
-    fontFamily: fonts.body,
-    fontSize: 12,
-    marginTop: 10,
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "transparent",
-    borderRadius: radii.md,
-    padding: 14,
-    marginBottom: 8,
-    backgroundColor: colors.surfaceMuted,
-    fontFamily: fonts.mono,
-    color: colors.text,
-    fontSize: 15,
-  },
-  helperText: {
-    marginTop: 4,
-    color: colors.textMuted,
-    fontFamily: fonts.body,
-    fontSize: 12,
-  },
-  pillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 4 },
-  pill: {
-    borderWidth: 0.5,
-    borderColor: colors.border,
-    borderRadius: radii.pill,
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    backgroundColor: colors.surfaceMuted,
-  },
-  pillActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  pillText: {
-    color: colors.text,
-    fontFamily: fonts.body,
-    fontWeight: "600",
-    fontSize: 12,
-  },
-  pillTextActive: { color: "#fff" },
-  rateRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    gap: 8,
-  },
-  rateLabel: {
-    width: 40,
-    fontFamily: fonts.body,
-    fontWeight: "600",
-    color: colors.text,
-    fontSize: 13,
-  },
-  rateInput: {
-    flex: 1,
-    borderWidth: 0.5,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    padding: 10,
-    backgroundColor: colors.surfaceMuted,
-    fontFamily: fonts.mono,
-    color: colors.text,
-    fontSize: 13,
-  },
-  rateUnit: {
-    color: colors.textMuted,
-    fontFamily: fonts.body,
-    fontSize: 12,
-    width: 36,
-  },
-});
