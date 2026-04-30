@@ -1,4 +1,4 @@
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { OcrResult } from './types';
 
 const OCR_ENDPOINT = process.env.EXPO_PUBLIC_OCR_ENDPOINT || '';

@@ -109,7 +109,11 @@ export default function MyProfileScreen() {
     const normalized = value.replace(/,/g, "");
     const numeric = Number(normalized);
     if (Number.isNaN(numeric)) {
-      setRatesDraft((prev) => ({ ...prev, [code]: undefined }));
+      setRatesDraft((prev) => {
+        const next = { ...prev };
+        delete next[code];
+        return next;
+      });
       return;
     }
     setRatesDraft((prev) => ({ ...prev, [code]: numeric }));

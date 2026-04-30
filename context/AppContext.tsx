@@ -123,7 +123,7 @@ export function AppContextProvider({
         return;
       }
 
-      const seededUsers = loadedUsers.length
+      const seededUsers: User[] = loadedUsers.length
         ? loadedUsers
         : [
             {

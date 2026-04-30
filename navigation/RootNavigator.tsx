@@ -44,26 +44,39 @@ function AppTabs() {
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
-        headerRight: () => null,
+        headerShown: false,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
+          position: "absolute",
+          bottom: 24,
+          left: 20,
+          right: 20,
+          elevation: 8,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.15,
+          shadowRadius: 10,
           backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: 0.5,
+          borderRadius: radii.xl,
+          height: 64,
+          borderTopWidth: 0,
+          paddingBottom: 8,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: "500",
+          fontWeight: "600",
+          marginBottom: 4,
         },
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color }) => {
           const icons = TAB_ICONS[route.name];
           const iconName = icons
             ? focused
               ? icons.focused
               : icons.default
             : "ellipse-outline";
-          return <Ionicons name={iconName} size={22} color={color} />;
+          return <Ionicons name={iconName} size={24} color={color} />;
         },
       })}
     >

@@ -12,7 +12,7 @@ import {
   View,
 } from "react-native";
 import { CameraView, CameraViewRef, useCameraPermissions } from "expo-camera";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { useAppContext } from "../context/AppContext";
 import { runOcrOnImage } from "../utils/ocr";
 import { MerchantCategoryMap, ReceiptLineItem } from "../utils/types";
@@ -142,7 +142,7 @@ export default function AddExpenseScreen() {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [receiptImageUri, setReceiptImageUri] = useState<string | null>(null);
   const [lineItems, setLineItems] = useState<LineItemInput[]>([]);
-  const cameraRef = useRef<CameraViewRef | null>(null);
+  const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
 
   useEffect(() => {

@@ -82,14 +82,14 @@ export async function scheduleDailyReminder(
   const hasToday = hasExpenseOnDate(expenses, today);
   const triggerDate = getNextTriggerDate(settings.time, hasToday);
 
-  const notificationId = await Notifications.scheduleNotificationAsync({
-    content: {
-      title: "Daily reminder",
-      body: "Did you spend anything today? Don't forget to log it!",
-      sound: "default",
-    },
-    trigger: triggerDate,
-  });
+    const notificationId = await Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Daily reminder",
+        body: "Did you spend anything today? Don't forget to log it!",
+        sound: "default",
+      },
+      trigger: { date: triggerDate },
+    });
 
   return { ...settings, notificationId };
 }
