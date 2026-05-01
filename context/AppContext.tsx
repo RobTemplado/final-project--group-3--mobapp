@@ -61,9 +61,12 @@ type AppContextValue = {
     role: Role,
   ) => Promise<AuthResult>;
   login: (name: string, password: string) => Promise<AuthResult>;
+  loginAsGuest: () => void;
   logout: () => void;
   addCategory: (name: string, limit: number) => Promise<Category>;
+  updateCategoryLimit: (id: string, limit: number) => Promise<void>;
   addExpense: (input: AddExpenseInput) => Promise<AuthResult>;
+  populateRandomData: () => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
@@ -74,9 +77,9 @@ const defaultReminderSettings: ReminderSettings = {
 };
 
 const defaultCurrencySettings: CurrencySettings = {
-  homeCurrency: "USD",
+  homeCurrency: "PHP",
   rates: {
-    USD: 1,
+    PHP: 1,
   },
 };
 
@@ -269,6 +272,15 @@ export function AppContextProvider({
     return { ok: true };
   };
 
+  const loginAsGuest = () => {
+    setCurrentUser({
+      id: createId("guest"),
+      name: "Guest",
+      password: "",
+      role: "Guest",
+    });
+  };
+
   const logout = () => {
     setCurrentUser(null);
   };
@@ -296,6 +308,14 @@ export function AppContextProvider({
     await saveCategories(nextCategories);
 
     return newCategory;
+  };
+
+  const updateCategoryLimit = async (id: string, limit: number) => {
+    const nextCategories = categories.map((cat) =>
+      cat.id === id ? { ...cat, limit } : cat,
+    );
+    setCategories(nextCategories);
+    await saveCategories(nextCategories);
   };
 
   const addExpense = async (input: AddExpenseInput): Promise<AuthResult> => {
@@ -358,6 +378,33 @@ export function AppContextProvider({
     return { ok: true };
   };
 
+  const populateRandomData = async () => {
+    if (!currentUser) return;
+    const dummyExpenses: Expense[] = [];
+    const now = Date.now();
+    for (let i = 0; i < 25; i++) {
+       const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+       const randomAmount = Math.floor(Math.random() * 200) + 10;
+       const pastDate = new Date(now - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000);
+       const dateStr = pastDate.toISOString().slice(0, 10);
+       dummyExpenses.push({
+         id: createId("exp"),
+         userId: currentUser.id,
+         amount: randomAmount,
+         categoryId: randomCategory.id,
+         date: dateStr,
+         currency: currencySettings.homeCurrency,
+         homeAmount: randomAmount,
+         exchangeRate: 1,
+         exchangeDate: dateStr,
+         merchant: ["Starbucks", "Uber", "Target", "Amazon", "Local Cafe"][Math.floor(Math.random() * 5)]
+       });
+    }
+    const nextExpenses = [...dummyExpenses, ...expenses];
+    setExpenses(nextExpenses);
+    await saveExpenses(nextExpenses);
+  };
+
   const value = useMemo<AppContextValue>(
     () => ({
       users,
@@ -371,9 +418,12 @@ export function AppContextProvider({
       updateCurrencySettings,
       registerUser,
       login,
+      loginAsGuest,
       logout,
       addCategory,
+      updateCategoryLimit,
       addExpense,
+      populateRandomData,
     }),
     [
       users,

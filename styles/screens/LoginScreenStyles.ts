@@ -157,4 +157,19 @@ export default StyleSheet.create({
     color: colors.accent,
     fontWeight: "700",
   },
+  guestButton: {
+    backgroundColor: "transparent",
+    paddingVertical: 14,
+    borderRadius: radii.md,
+    alignItems: "center",
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  guestButtonText: {
+    color: colors.text,
+    fontWeight: "700",
+    fontFamily: fonts.body,
+    fontSize: 15,
+  },
 });

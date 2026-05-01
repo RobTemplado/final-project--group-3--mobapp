@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   Switch,
@@ -8,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import styles from "../styles/screens/MyProfileScreenStyles";
 import { colors } from "../utils/theme";
@@ -36,6 +38,8 @@ export default function MyProfileScreen() {
   const {
     currentUser,
     expenses,
+    categories,
+    updateCategoryLimit,
     reminderSettings,
     updateReminderSettings,
     currencySettings,
@@ -45,6 +49,8 @@ export default function MyProfileScreen() {
 
   const [reminderTime, setReminderTime] = useState(reminderSettings.time);
   const [ratesDraft, setRatesDraft] = useState(currencySettings.rates ?? {});
+  const [isFetchingRates, setIsFetchingRates] = useState(false);
+  const [budgetDraft, setBudgetDraft] = useState<Record<string, string>>({});
 
   const totalEntries = expenses.filter((e) => e.userId === currentUser?.id).length;
   const symbol = getCurrencySymbol(currencySettings.homeCurrency);
@@ -54,6 +60,11 @@ export default function MyProfileScreen() {
 
   useEffect(() => { setReminderTime(reminderSettings.time); }, [reminderSettings.time]);
   useEffect(() => { setRatesDraft(currencySettings.rates ?? {}); }, [currencySettings.rates]);
+  useEffect(() => {
+    const draft: Record<string, string> = {};
+    categories.forEach(c => { draft[c.id] = String(c.limit); });
+    setBudgetDraft(draft);
+  }, [categories]);
 
   const handleToggle = async () => {
     if (!reminderSettings.enabled) {
@@ -101,6 +112,56 @@ export default function MyProfileScreen() {
     await updateCurrencySettings({ ...currencySettings, rates: { ...currencySettings.rates, [code]: rate }, updatedAt: new Date().toISOString() });
   };
 
+  const fetchLatestRates = async () => {
+    setIsFetchingRates(true);
+    try {
+      const base = currencySettings.homeCurrency;
+      const response = await fetch(`https://open.er-api.com/v6/latest/${base}`);
+      const data = await response.json();
+      
+      if (data.result === "success") {
+        const nextRates: Record<string, number> = { [base]: 1 };
+        supportedCurrencies.forEach(code => {
+          if (data.rates[code]) {
+            // API returns 1 base = X foreign. 
+            // Our app logic: input amount * rate = home amount.
+            // If home is PHP, USD rate should be ~56.
+            // data.rates[USD] is 1 PHP = ~0.017 USD.
+            // So rate should be 1 / data.rates[code].
+            nextRates[code] = 1 / data.rates[code];
+          }
+        });
+        await updateCurrencySettings({ 
+          ...currencySettings, 
+          rates: nextRates, 
+          updatedAt: new Date().toISOString() 
+        });
+        Alert.alert("Success", "Exchange rates updated successfully.");
+      } else {
+        throw new Error("API error");
+      }
+    } catch (err) {
+      Alert.alert("Error", "Could not fetch exchange rates. Please check your internet connection.");
+    } finally {
+      setIsFetchingRates(false);
+    }
+  };
+
+  const handleBudgetChange = (id: string, value: string) => {
+    setBudgetDraft(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleBudgetBlur = async (id: string) => {
+    const numeric = parseFloat(budgetDraft[id] || "0");
+    if (isNaN(numeric) || numeric < 0) {
+      Alert.alert("Invalid budget", "Please enter a valid positive number.");
+      const cat = categories.find(c => c.id === id);
+      setBudgetDraft(prev => ({ ...prev, [id]: String(cat?.limit || 0) }));
+      return;
+    }
+    await updateCategoryLimit(id, numeric);
+  };
+
   const handleLogout = () => {
     Alert.alert("Log out", "Are you sure you want to log out?", [
       { text: "Cancel", style: "cancel" },
@@ -109,7 +170,8 @@ export default function MyProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <SafeAreaView edges={["top"]} style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerEyebrow}>MY PROFILE</Text>
@@ -133,6 +195,16 @@ export default function MyProfileScreen() {
       {/* Account */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Account</Text>
+        
+        {currentUser?.role === 'Guest' ? (
+          <View style={[styles.detailRow, { backgroundColor: 'rgba(255, 204, 0, 0.1)', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, marginBottom: 12 }]}>
+            <Ionicons name="warning" size={16} color="#ffcc00" style={{ marginRight: 8 }} />
+            <Text style={{ color: '#ffcc00', fontSize: 13, flex: 1, lineHeight: 18 }}>
+              You are signed in as a Guest. Your preferences and expenses will not be saved!
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Username</Text>
           <Text style={styles.detailValue}>{currentUser?.name ?? ""}</Text>
@@ -150,6 +222,9 @@ export default function MyProfileScreen() {
       {/* Reminder */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Daily Reminder</Text>
+        <Text style={styles.cardDescription}>
+          Stay on top of your finances with a friendly nudge to log your daily spending.
+        </Text>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Enable reminder</Text>
           <Switch
@@ -173,9 +248,34 @@ export default function MyProfileScreen() {
         </Text>
       </View>
 
+      {/* Budgets */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Expense Budgets</Text>
+        <Text style={styles.cardDescription}>
+          Set monthly spending limits for each category to keep your financial goals in check.
+        </Text>
+        {categories.map((cat) => (
+          <View key={cat.id} style={styles.budgetRow}>
+            <Text style={styles.budgetLabel}>{cat.name}</Text>
+            <TextInput
+              value={budgetDraft[cat.id]}
+              onChangeText={(v) => handleBudgetChange(cat.id, v)}
+              onBlur={() => handleBudgetBlur(cat.id)}
+              keyboardType="decimal-pad"
+              style={styles.budgetInput}
+              placeholder="0.00"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+        ))}
+      </View>
+
       {/* Currency */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Currency</Text>
+        <Text style={styles.cardDescription}>
+          Choose your primary currency and manage exchange rates for international expenses.
+        </Text>
         <Text style={styles.fieldLabel}>Home currency</Text>
         <View style={styles.pillsRow}>
           {supportedCurrencies.map((code) => (
@@ -209,6 +309,22 @@ export default function MyProfileScreen() {
               <Text style={styles.rateUnit}>{currencySettings.homeCurrency}</Text>
             </View>
           ))}
+        
+        <TouchableOpacity 
+          style={styles.fetchRatesButton} 
+          onPress={fetchLatestRates}
+          disabled={isFetchingRates}
+        >
+          {isFetchingRates ? (
+            <ActivityIndicator size="small" color="#085041" />
+          ) : (
+            <>
+              <Ionicons name="refresh" size={16} color="#085041" />
+              <Text style={styles.fetchRatesButtonText}>Fetch Current Rates</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
         <Text style={styles.helperText}>
           Example: If home is PHP, enter 1 USD = 56.20 PHP.
         </Text>
@@ -219,6 +335,7 @@ export default function MyProfileScreen() {
         <Ionicons name="log-out-outline" size={20} color={colors.danger} />
         <Text style={styles.logoutButtonText}>Log Out</Text>
       </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

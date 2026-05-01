@@ -6,11 +6,14 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { BarChart, LineChart, PieChart } from "react-native-gifted-charts";
 import ExpenseListItem from "../components/ExpenseListItem";
 import { useAppContext } from "../context/AppContext";
 import { colors } from "../utils/theme";
 import styles from "../styles/screens/DashboardScreenStyles";
+
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type DateRangeKey = "7d" | "30d" | "all";
 
@@ -242,10 +245,45 @@ export default function DashboardScreen() {
     return styles.heroPillTextGood;
   };
 
+  const getInsights = () => {
+    if (!budgetStatus.length || !hasCategoryTotals) return null;
+    
+    // Find category closest to or over limit
+    const highestPercent = [...budgetStatus].sort((a, b) => b.percent - a.percent)[0];
+    
+    if (highestPercent.percent >= 1) {
+      return {
+        type: 'danger',
+        title: `Overspent on ${highestPercent.category.name}`,
+        message: `You've exceeded your ${highestPercent.category.name} budget by ${symbol}${Math.abs(highestPercent.category.limit - highestPercent.total).toFixed(2)}. Try finding free alternatives or cutting down usage completely for the rest of the period.`
+      };
+    } else if (highestPercent.percent >= 0.8) {
+      return {
+        type: 'warning',
+        title: `Watch out for ${highestPercent.category.name}`,
+        message: `You've used ${Math.round(highestPercent.percent * 100)}% of your ${highestPercent.category.name} limit. Try finding cheaper options or pacing yourself sensibly.`
+      };
+    } 
+    
+    // Suggestion based on general spending if under 80% everywhere
+    if (highestPercent.total > 0) {
+      return {
+        type: 'success',
+        title: 'Budget is looking healthy!',
+        message: `Your highest spend is currently ${highestPercent.category.name}. Check if you can shift some of that into savings or investments.`
+      };
+    }
+    
+    return null;
+  };
+
+  const insight = getInsights();
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={["top"]} style={styles.container}>
       <FlatList
         data={filtered}
+        showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <ExpenseListItem
@@ -330,6 +368,25 @@ export default function DashboardScreen() {
                 ) : null}
               </View>
             </View>
+
+            {/* Smart Insights */}
+            {insight ? (
+              <View style={[styles.insightCard, 
+                insight.type === 'danger' ? styles.insightCardDanger :
+                insight.type === 'warning' ? styles.insightCardWarning : styles.insightCardSuccess]}>
+                <View style={styles.insightHeader}>
+                  <Ionicons name={
+                    insight.type === 'danger' ? "alert-circle" :
+                    insight.type === 'warning' ? "warning" : "bulb"
+                  } size={20} color={
+                    insight.type === 'danger' ? colors.danger :
+                    insight.type === 'warning' ? "#EF9F27" : colors.success
+                  } />
+                  <Text style={styles.insightTitle}>{insight.title}</Text>
+                </View>
+                <Text style={styles.insightMessage}>{insight.message}</Text>
+              </View>
+            ) : null}
 
             {/* Search and Filters */}
             <TextInput
@@ -679,7 +736,7 @@ export default function DashboardScreen() {
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

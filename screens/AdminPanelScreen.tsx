@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Alert, FlatList, Text, TouchableOpacity, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import styles from "../styles/screens/AdminPanelScreenStyles";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
@@ -61,9 +62,10 @@ export default function AdminPanelScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: "#F5F6FA" }}>
+    <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: "#F5F6FA" }}>
       <FlatList
         data={filteredExpenses}
+        showsVerticalScrollIndicator={false}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => {
@@ -127,6 +129,6 @@ export default function AdminPanelScreen() {
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }

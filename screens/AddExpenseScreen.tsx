@@ -20,6 +20,9 @@ import { colors, fonts, radii, shadow } from "../utils/theme";
 import styles from "../styles/screens/AddExpenseScreenStyles";
 import { Ionicons } from "@expo/vector-icons";
 
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useNavigation } from "@react-navigation/native";
+
 const supportedCurrencies = ["PHP", "USD", "EUR", "GBP", "JPY", "AUD"];
 
 type LineItemInput = { id: string; name: string; amount: string };
@@ -67,8 +70,9 @@ function getCurrencySymbol(code: string): string {
 
 export default function AddExpenseScreen() {
   const { categories, addCategory, addExpense, currentUser, expenses, currencySettings } = useAppContext();
+  const navigation = useNavigation();
 
-  const defaultCurrency = "PHP";
+  const defaultCurrency = currencySettings.homeCurrency || "PHP";
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [merchant, setMerchant] = useState("");
@@ -91,8 +95,13 @@ export default function AddExpenseScreen() {
   const [lineItems, setLineItems] = useState<LineItemInput[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showNewCategory, setShowNewCategory] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const cameraRef = useRef<CameraView | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
+
+  useEffect(() => {
+    (navigation as any).setParams({ isCameraOpen });
+  }, [isCameraOpen, navigation]);
 
   useEffect(() => { if (!permission?.granted) requestPermission(); }, [permission, requestPermission]);
 
@@ -152,6 +161,7 @@ export default function AddExpenseScreen() {
     setCurrency(defaultCurrency); setReceiptImageUri(null); setLineItems([]);
     setScanMessage(""); setSuggestion(null); setIsCategoryManual(false);
     setNotes(""); setTagsInput(""); setSelectedCategoryId(null); setError("");
+    setShowAdvanced(false);
   };
 
   const handleSave = async () => {
@@ -282,8 +292,9 @@ export default function AddExpenseScreen() {
   const symbol = getCurrencySymbol(currency);
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.container}>
-      {/* Success toast */}
+    <SafeAreaView edges={["top"]} style={styles.container}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        {/* Success toast */}
       {showSuccess ? (
         <View style={styles.successToast}>
           <Ionicons name="checkmark-circle" size={20} color="#fff" />
@@ -303,6 +314,13 @@ export default function AddExpenseScreen() {
             <Text style={styles.scanButtonCompactText}>Scan</Text>
           </TouchableOpacity>
         </View>
+
+        {currentUser?.role === 'Guest' ? (
+          <View style={[styles.scanMessageBar, { backgroundColor: 'rgba(255, 204, 0, 0.1)', borderColor: 'rgba(255, 204, 0, 0.4)' }]}>
+            <Ionicons name="warning" size={16} color="#ffcc00" />
+            <Text style={[styles.scanMessage, { color: '#ffcc00' }]}>Guest expenses are saved locally and will be cleared on logout.</Text>
+          </View>
+        ) : null}
 
         {scanMessage ? (
           <View style={styles.scanMessageBar}>
@@ -329,37 +347,6 @@ export default function AddExpenseScreen() {
               style={styles.amountInput}
             />
           </View>
-
-          <Text style={styles.fieldLabel}>Currency</Text>
-          <View style={styles.pillsRow}>
-            {supportedCurrencies.map((code) => (
-              <TouchableOpacity
-                key={code}
-                style={[styles.pill, currency === code && styles.pillActive]}
-                onPress={() => setCurrency(code)}
-              >
-                <Text style={[styles.pillText, currency === code && styles.pillTextActive]}>{code}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {currency !== currencySettings.homeCurrency && (
-            <View style={styles.rateNotice}>
-              <Ionicons name="swap-horizontal" size={14} color={colors.accentSecondary} />
-              <Text style={styles.rateNoticeText}>
-                1 {currency} = {currencySettings.rates[currency] ?? "?"} {currencySettings.homeCurrency}
-              </Text>
-            </View>
-          )}
-
-          <Text style={styles.fieldLabel}>Date</Text>
-          <TextInput
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.textMuted}
-            value={date}
-            onChangeText={setDate}
-            style={styles.input}
-          />
         </View>
 
         {/* Category card */}
@@ -448,67 +435,117 @@ export default function AddExpenseScreen() {
             onChangeText={setMerchant}
             style={styles.input}
           />
-          <TextInput
-            placeholder="Notes (optional)"
-            placeholderTextColor={colors.textMuted}
-            value={notes}
-            onChangeText={setNotes}
-            style={styles.input}
-            multiline
-          />
-          <TextInput
-            placeholder="Tags: lunch, reimbursable, ..."
-            placeholderTextColor={colors.textMuted}
-            value={tagsInput}
-            onChangeText={setTagsInput}
-            style={styles.input}
-          />
         </View>
 
-        {/* Receipt breakdown card */}
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Receipt Breakdown</Text>
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Subtotal</Text>
-            <TextInput placeholder="0.00" placeholderTextColor={colors.textMuted} value={subtotal} onChangeText={setSubtotal} keyboardType="decimal-pad" style={styles.receiptInput} />
-          </View>
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Tax</Text>
-            <TextInput placeholder="0.00" placeholderTextColor={colors.textMuted} value={tax} onChangeText={setTax} keyboardType="decimal-pad" style={styles.receiptInput} />
-          </View>
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Total</Text>
-            <TextInput placeholder="0.00" placeholderTextColor={colors.textMuted} value={total} onChangeText={setTotal} keyboardType="decimal-pad" style={[styles.receiptInput, styles.receiptInputTotal]} />
-          </View>
+        <TouchableOpacity 
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: 12, paddingVertical: 10 }} 
+          onPress={() => setShowAdvanced(!showAdvanced)}
+        >
+          <Text style={{ color: colors.textMuted, fontSize: 14, fontWeight: '500', marginRight: 4 }}>
+            {showAdvanced ? "Hide Advanced Options" : "Show Advanced Options"}
+          </Text>
+          <Ionicons name={showAdvanced ? "chevron-up" : "chevron-down"} size={16} color={colors.textMuted} />
+        </TouchableOpacity>
 
-          {lineItems.map((item) => (
-            <View key={item.id} style={styles.lineItemRow}>
+        {showAdvanced && (
+          <>
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>More Info</Text>
+
+              <Text style={styles.fieldLabel}>Currency</Text>
+              <View style={styles.pillsRow}>
+                {supportedCurrencies.map((code) => (
+                  <TouchableOpacity
+                    key={code}
+                    style={[styles.pill, currency === code && styles.pillActive]}
+                    onPress={() => setCurrency(code)}
+                  >
+                    <Text style={[styles.pillText, currency === code && styles.pillTextActive]}>{code}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {currency !== currencySettings.homeCurrency && (
+                <View style={styles.rateNotice}>
+                  <Ionicons name="swap-horizontal" size={14} color={colors.accentSecondary} />
+                  <Text style={styles.rateNoticeText}>
+                    1 {currency} = {currencySettings.rates[currency] ?? "?"} {currencySettings.homeCurrency}
+                  </Text>
+                </View>
+              )}
+
+              <Text style={styles.fieldLabel}>Date</Text>
               <TextInput
-                placeholder="Item name"
+                placeholder="YYYY-MM-DD"
                 placeholderTextColor={colors.textMuted}
-                value={item.name}
-                onChangeText={(v) => setLineItems((prev) => prev.map((l) => l.id === item.id ? { ...l, name: v } : l))}
-                style={[styles.input, styles.lineItemName]}
+                value={date}
+                onChangeText={setDate}
+                style={styles.input}
+              />
+
+              <TextInput
+                placeholder="Notes (optional)"
+                placeholderTextColor={colors.textMuted}
+                value={notes}
+                onChangeText={setNotes}
+                style={styles.input}
+                multiline
               />
               <TextInput
-                placeholder="0.00"
+                placeholder="Tags: lunch, reimbursable, ..."
                 placeholderTextColor={colors.textMuted}
-                value={item.amount}
-                onChangeText={(v) => setLineItems((prev) => prev.map((l) => l.id === item.id ? { ...l, amount: v } : l))}
-                keyboardType="decimal-pad"
-                style={[styles.input, styles.lineItemAmount]}
+                value={tagsInput}
+                onChangeText={setTagsInput}
+                style={styles.input}
               />
-              <TouchableOpacity style={styles.lineItemRemove} onPress={() => setLineItems((prev) => prev.filter((l) => l.id !== item.id))}>
-                <Ionicons name="close" size={16} color={colors.danger} />
+            </View>
+
+            {/* Receipt breakdown card */}
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Receipt Breakdown</Text>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Subtotal</Text>
+                <TextInput placeholder="0.00" placeholderTextColor={colors.textMuted} value={subtotal} onChangeText={setSubtotal} keyboardType="decimal-pad" style={styles.receiptInput} />
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Tax</Text>
+                <TextInput placeholder="0.00" placeholderTextColor={colors.textMuted} value={tax} onChangeText={setTax} keyboardType="decimal-pad" style={styles.receiptInput} />
+              </View>
+              <View style={styles.receiptRow}>
+                <Text style={styles.receiptLabel}>Total</Text>
+                <TextInput placeholder="0.00" placeholderTextColor={colors.textMuted} value={total} onChangeText={setTotal} keyboardType="decimal-pad" style={[styles.receiptInput, styles.receiptInputTotal]} />
+              </View>
+
+              {lineItems.map((item) => (
+                <View key={item.id} style={styles.lineItemRow}>
+                  <TextInput
+                    placeholder="Item name"
+                    placeholderTextColor={colors.textMuted}
+                    value={item.name}
+                    onChangeText={(v) => setLineItems((prev) => prev.map((l) => l.id === item.id ? { ...l, name: v } : l))}
+                    style={[styles.input, styles.lineItemName]}
+                  />
+                  <TextInput
+                    placeholder="0.00"
+                    placeholderTextColor={colors.textMuted}
+                    value={item.amount}
+                    onChangeText={(v) => setLineItems((prev) => prev.map((l) => l.id === item.id ? { ...l, amount: v } : l))}
+                    keyboardType="decimal-pad"
+                    style={[styles.input, styles.lineItemAmount]}
+                  />
+                  <TouchableOpacity style={styles.lineItemRemove} onPress={() => setLineItems((prev) => prev.filter((l) => l.id !== item.id))}>
+                    <Ionicons name="close" size={16} color={colors.danger} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              <TouchableOpacity style={styles.secondaryButton} onPress={() => setLineItems((prev) => [...prev, createLineItem()])}>
+                <Ionicons name="add" size={16} color={colors.textMuted} />
+                <Text style={styles.secondaryButtonText}> Add Line Item</Text>
               </TouchableOpacity>
             </View>
-          ))}
-
-          <TouchableOpacity style={styles.secondaryButton} onPress={() => setLineItems((prev) => [...prev, createLineItem()])}>
-            <Ionicons name="add" size={16} color={colors.textMuted} />
-            <Text style={styles.secondaryButtonText}> Add Line Item</Text>
-          </TouchableOpacity>
-        </View>
+          </>
+        )}
 
         {error ? (
           <View style={styles.errorBar}>
@@ -518,7 +555,11 @@ export default function AddExpenseScreen() {
         ) : null}
 
         {/* Save button — always visible, not covered by tab bar */}
-        <TouchableOpacity style={styles.primaryButton} onPress={handleSave} activeOpacity={0.85}>
+        <TouchableOpacity 
+          style={styles.primaryButton}
+          onPress={handleSave} 
+          activeOpacity={0.85}
+        >
           <Ionicons name="checkmark-circle" size={20} color="#fff" />
           <Text style={styles.primaryButtonText}>  Save Expense</Text>
         </TouchableOpacity>
@@ -527,5 +568,6 @@ export default function AddExpenseScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
     </KeyboardAvoidingView>
-  );
+  </SafeAreaView>
+);
 }

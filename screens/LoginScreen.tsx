@@ -15,7 +15,7 @@ import { useAppContext } from "../context/AppContext";
 import { Role } from "../utils/types";
 
 export default function LoginScreen() {
-  const { login, registerUser } = useAppContext();
+  const { login, registerUser, loginAsGuest } = useAppContext();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
@@ -123,6 +123,10 @@ export default function LoginScreen() {
               </Text>
             </Text>
           </View>
+
+          <TouchableOpacity style={styles.guestButton} onPress={loginAsGuest}>
+            <Text style={styles.guestButtonText}>Continue as Guest</Text>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </View>

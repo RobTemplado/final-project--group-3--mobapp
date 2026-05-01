@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
+import { Alert, Animated } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import LoginScreen from "../screens/LoginScreen";
 import DashboardScreen from "../screens/DashboardScreen";
@@ -23,6 +25,25 @@ const TAB_ICONS: Record<string, { focused: IoniconsName; default: IoniconsName }
   "My Profile": { focused: "person-circle", default: "person-circle-outline" },
 };
 
+function AnimatedIcon({ focused, name, color, size }: { focused: boolean; name: IoniconsName; color: string; size: number }) {
+  const scale = useRef(new Animated.Value(focused ? 1.2 : 1)).current;
+
+  useEffect(() => {
+    Animated.spring(scale, {
+      toValue: focused ? 1.2 : 1,
+      useNativeDriver: true,
+      tension: 50,
+      friction: 4,
+    }).start();
+  }, [focused, scale]);
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Ionicons name={name} size={size} color={color} />
+    </Animated.View>
+  );
+}
+
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animation: "fade" }}>
@@ -32,19 +53,23 @@ function AuthStack() {
 }
 
 function AppTabs() {
-  const { currentUser } = useAppContext();
+  const { currentUser, populateRandomData } = useAppContext();
+  const insets = useSafeAreaInsets();
+  const floatingBottom = Math.max(insets.bottom, 16);
 
   return (
     <Tabs.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        tabBarHideOnKeyboard: true,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
+        sceneStyle: { backgroundColor: colors.background },
         tabBarStyle: {
           position: "absolute",
-          bottom: 20,
-          left: 16,
-          right: 16,
+          bottom: floatingBottom,
+          left: 32,
+          right: 32,
           elevation: 10,
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 6 },
@@ -54,37 +79,43 @@ function AppTabs() {
           borderRadius: radii.xl,
           height: 68,
           borderTopWidth: 0,
-          paddingBottom: 10,
-          paddingTop: 10,
+          marginHorizontal: 16,
+          paddingBottom: 0,
+          paddingTop: 0,
+          display: (route.params as any)?.isCameraOpen ? "none" : "flex",
+        },
+        tabBarItemStyle: {
+          justifyContent: "center",
+          alignItems: "center",
+          paddingVertical: 10,
         },
         tabBarLabelStyle: {
           fontSize: 10,
           fontWeight: "600",
           fontFamily: fonts.body,
-          marginTop: 2,
         },
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color }) => {
           const icons = TAB_ICONS[route.name];
           const iconName = icons
             ? focused ? icons.focused : icons.default
             : "ellipse-outline";
-          return <Ionicons name={iconName} size={22} color={color} />;
+          return <AnimatedIcon focused={focused} name={iconName} size={22} color={color} />;
         },
       })}
     >
-      <Tabs.Screen name="Dashboard" component={DashboardScreen} />
+      <Tabs.Screen 
+        name="Dashboard" 
+        component={DashboardScreen} 
+        listeners={{
+          tabLongPress: async () => {
+            await populateRandomData();
+            Alert.alert("Debug Mode", "Random data has been populated!");
+          }
+        }}
+      />
       <Tabs.Screen
         name="Add Expense"
         component={AddExpenseScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <Ionicons
-              name="add-circle"
-              size={32}
-              color={focused ? colors.accent : colors.primary}
-            />
-          ),
-        }}
       />
       {currentUser?.role === "Admin" ? (
         <Tabs.Screen name="Admin" component={AdminPanelScreen} />

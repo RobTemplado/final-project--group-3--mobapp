@@ -95,8 +95,42 @@ export default StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     marginBottom: 14,
+  },  insightCard: {
+    padding: 16,
+    borderRadius: radii.md,
+    marginBottom: 16,
+    borderWidth: 1,
   },
-  statCard: {
+  insightCardDanger: {
+    backgroundColor: "rgba(239, 68, 68, 0.08)",
+    borderColor: "rgba(239, 68, 68, 0.2)",
+  },
+  insightCardWarning: {
+    backgroundColor: "rgba(239, 159, 39, 0.08)",
+    borderColor: "rgba(239, 159, 39, 0.2)",
+  },
+  insightCardSuccess: {
+    backgroundColor: "rgba(16, 185, 129, 0.08)",
+    borderColor: "rgba(16, 185, 129, 0.2)",
+  },
+  insightHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 6,
+  },
+  insightTitle: {
+    fontFamily: fonts.heading,
+    fontWeight: "700",
+    fontSize: 15,
+    color: colors.text,
+  },
+  insightMessage: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: colors.textMuted,
+    lineHeight: 18,
+  },  statCard: {
     flex: 1,
     backgroundColor: colors.surface,
     borderRadius: radii.lg,

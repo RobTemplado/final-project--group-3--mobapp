@@ -3,6 +3,7 @@ import React from "react";
 import * as Notifications from "expo-notifications";
 import { AppContextProvider } from "./context/AppContext";
 import RootNavigator from "./navigation/RootNavigator";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -16,9 +17,11 @@ Notifications.setNotificationHandler({
 
 export default function App() {
   return (
-    <AppContextProvider>
-      <StatusBar style="dark" />
-      <RootNavigator />
-    </AppContextProvider>
+    <SafeAreaProvider>
+      <AppContextProvider>
+        <StatusBar style="dark" />
+        <RootNavigator />
+      </AppContextProvider>
+    </SafeAreaProvider>
   );
 }

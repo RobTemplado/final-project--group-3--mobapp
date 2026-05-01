@@ -3,26 +3,31 @@ import { colors, fonts, radii, shadow } from "../../utils/theme";
 
 export default StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 16, paddingTop: 60 },
+  content: { padding: 16, paddingTop: 16 },
   header: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.xl,
+    padding: 24,
+    marginBottom: 14,
+    ...shadow.lift,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
   },
   headerEyebrow: {
-    color: colors.textMuted,
+    color: "rgba(255,255,255,0.45)",
     fontSize: 10,
     letterSpacing: 1.5,
     fontFamily: fonts.body,
     fontWeight: "700",
+    textTransform: "uppercase",
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 22,
     fontFamily: fonts.heading,
     fontWeight: "700",
-    color: colors.text,
-    marginTop: 2,
+    color: "#fff",
+    marginTop: 4,
   },
   scanButtonCompact: {
     flexDirection: "row",
